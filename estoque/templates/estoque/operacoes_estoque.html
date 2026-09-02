@@ -1,0 +1,242 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Operações de Estoque</title>
+    <style>
+        :root {
+            --bg: #f4f7f4;
+            --panel: #ffffff;
+            --line: #d8e0da;
+            --text: #1d2a24;
+            --muted: #607067;
+            --primary: #2d6a4f;
+            --danger: #a33f3f;
+            --warn: #956f20;
+        }
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(165deg, #f8faf8, var(--bg));
+            color: var(--text);
+        }
+        .page {
+            max-width: 1160px;
+            margin: 0 auto;
+            padding: 24px;
+        }
+        .top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 14px;
+        }
+        h1 { margin: 0; font-size: 1.9rem; }
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .brand-logo {
+            width: clamp(120px, 16vw, 210px);
+            height: auto;
+            object-fit: contain;
+        }
+        .subtitle { margin: 6px 0 0; color: var(--muted); }
+        .actions { display: flex; gap: 8px; }
+        .link {
+            padding: 9px 12px;
+            border: 1px solid var(--line);
+            border-radius: 10px;
+            text-decoration: none;
+            color: var(--text);
+            background: #fff;
+            font-weight: 600;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(250px, 1fr));
+            gap: 12px;
+        }
+        .card {
+            background: var(--panel);
+            border: 1px solid var(--line);
+            border-radius: 14px;
+            padding: 14px;
+        }
+        .card h2 {
+            margin: 0 0 6px;
+            font-size: 1.08rem;
+        }
+        .hint { margin: 0 0 10px; color: var(--muted); font-size: 0.89rem; }
+        label {
+            display: block;
+            margin: 8px 0 4px;
+            font-size: 0.87rem;
+            color: var(--muted);
+            font-weight: 600;
+        }
+        select, textarea, button {
+            width: 100%;
+            border: 1px solid var(--line);
+            border-radius: 10px;
+            padding: 9px 10px;
+            font-size: 0.94rem;
+            font-family: inherit;
+        }
+        textarea { min-height: 64px; resize: vertical; }
+        button {
+            margin-top: 10px;
+            cursor: pointer;
+            color: #fff;
+            border: none;
+            font-weight: 700;
+        }
+        .btn-in { background: var(--primary); }
+        .btn-tr { background: #3f6da3; }
+        .btn-out { background: var(--danger); }
+        .empty {
+            border: 1px dashed var(--line);
+            background: #f8fbf9;
+            border-radius: 9px;
+            padding: 9px;
+            color: var(--muted);
+            font-size: 0.9rem;
+        }
+        .messages { margin-bottom: 12px; display: grid; gap: 8px; }
+        .msg {
+            border-radius: 10px;
+            padding: 10px 12px;
+            border: 1px solid var(--line);
+            font-size: 0.92rem;
+            background: #fff;
+        }
+        .msg.success { border-color: #b9dfc5; background: #edf9f0; }
+        .msg.error { border-color: #e7bcbc; background: #fff0f0; }
+        .warn-box {
+            margin-top: 12px;
+            border: 1px dashed #d8be79;
+            border-radius: 10px;
+            background: #fff8e6;
+            color: var(--warn);
+            padding: 9px 10px;
+            font-size: 0.88rem;
+        }
+        @media (max-width: 980px) {
+            .grid { grid-template-columns: 1fr; }
+            .top { flex-direction: column; align-items: flex-start; }
+            .actions { width: 100%; }
+        }
+    </style>
+</head>
+<body>
+    <main class="page">
+        <section class="top">
+            <div class="brand">
+                <img class="brand-logo" src="{% static 'img/tecnowatt59anos.png' %}" alt="Tecnowatt 59 anos">
+                <div>
+                    <h1>Operações de Estoque</h1>
+                    <p class="subtitle">Registre entrada, transferência e saída de paletes sem usar o admin.</p>
+                </div>
+            </div>
+            <div class="actions">
+                <a class="link" href="/">Mapa</a>
+                <a class="link" href="/admin/" target="_blank" rel="noopener">Admin</a>
+            </div>
+        </section>
+
+        {% if messages %}
+            <section class="messages">
+                {% for message in messages %}
+                    <div class="msg {% if message.tags %}{{ message.tags }}{% endif %}">{{ message }}</div>
+                {% endfor %}
+            </section>
+        {% endif %}
+
+        <section class="grid">
+            <article class="card">
+                <h2>Entrada</h2>
+                <p class="hint">Aloca um palete sem posição em um vão livre.</p>
+                {% if paletes_entrada and posicoes_livres %}
+                    <form method="post">
+                        {% csrf_token %}
+                        <input type="hidden" name="acao" value="entrada">
+                        <label for="entrada-palete">Palete</label>
+                        <select id="entrada-palete" name="palete_id" required>
+                            {% for palete in paletes_entrada %}
+                                <option value="{{ palete.id }}">{{ palete.codigo }} ({{ palete.get_setor_display }})</option>
+                            {% endfor %}
+                        </select>
+                        <label for="entrada-posicao">Posição destino</label>
+                        <select id="entrada-posicao" name="posicao_id" required>
+                            {% for posicao in posicoes_livres %}
+                                <option value="{{ posicao.id }}">{{ posicao.codigo }} - {{ posicao.get_setor_destino_display }}</option>
+                            {% endfor %}
+                        </select>
+                        <label for="entrada-obs">Observação</label>
+                        <textarea id="entrada-obs" name="observacao" placeholder="Ex: recebimento fornecedor X"></textarea>
+                        <button class="btn-in" type="submit">Registrar entrada</button>
+                    </form>
+                {% else %}
+                    <div class="empty">Sem palete disponível para entrada ou sem posições livres.</div>
+                {% endif %}
+            </article>
+
+            <article class="card">
+                <h2>Transferência</h2>
+                <p class="hint">Move um palete ativo para outra posição livre.</p>
+                {% if paletes_transferencia and posicoes_livres %}
+                    <form method="post">
+                        {% csrf_token %}
+                        <input type="hidden" name="acao" value="transferencia">
+                        <label for="tr-palete">Palete</label>
+                        <select id="tr-palete" name="palete_id" required>
+                            {% for palete in paletes_transferencia %}
+                                <option value="{{ palete.id }}">{{ palete.codigo }} (atual: {{ palete.posicao.codigo }})</option>
+                            {% endfor %}
+                        </select>
+                        <label for="tr-posicao">Nova posição</label>
+                        <select id="tr-posicao" name="posicao_id" required>
+                            {% for posicao in posicoes_livres %}
+                                <option value="{{ posicao.id }}">{{ posicao.codigo }} - {{ posicao.get_setor_destino_display }}</option>
+                            {% endfor %}
+                        </select>
+                        <label for="tr-obs">Observação</label>
+                        <textarea id="tr-obs" name="observacao" placeholder="Ex: reorganizacao de corredor"></textarea>
+                        <button class="btn-tr" type="submit">Registrar transferência</button>
+                    </form>
+                {% else %}
+                    <div class="empty">Sem paletes em posição ou sem posições livres.</div>
+                {% endif %}
+            </article>
+
+            <article class="card">
+                <h2>Saída</h2>
+                <p class="hint">Expede um palete ativo e libera o vão.</p>
+                {% if paletes_saida %}
+                    <form method="post">
+                        {% csrf_token %}
+                        <input type="hidden" name="acao" value="saida">
+                        <label for="saida-palete">Palete</label>
+                        <select id="saida-palete" name="palete_id" required>
+                            {% for palete in paletes_saida %}
+                                <option value="{{ palete.id }}">{{ palete.codigo }} ({{ palete.posicao.codigo }})</option>
+                            {% endfor %}
+                        </select>
+                        <label for="saida-obs">Motivo / observacao</label>
+                        <textarea id="saida-obs" name="observacao" placeholder="Ex: envio para cliente"></textarea>
+                        <button class="btn-out" type="submit">Registrar saida</button>
+                    </form>
+                {% else %}
+                    <div class="empty">Sem paletes ativos para saída.</div>
+                {% endif %}
+                <div class="warn-box">Posicoes BAC aceitam apenas paletes do setor BAC.</div>
+            </article>
+        </section>
+    </main>
+</body>
+</html>

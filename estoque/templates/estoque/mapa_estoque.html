@@ -1,0 +1,654 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mapa do Estoque</title>
+    <style>
+        :root {
+            --bg-1: #f7f8f2;
+            --bg-2: #eef2e2;
+            --panel: #ffffff;
+            --text: #1a2a26;
+            --muted: #5f6f67;
+            --line: #dbe4de;
+            --primary: #2d6a4f;
+            --primary-2: #1b4332;
+            --livre: #dbf3df;
+            --ocupada: #ffd6c9;
+            --bloqueada: #f5edb8;
+            --sem: #f3f5f4;
+            --shadow: 0 18px 40px rgba(24, 46, 38, 0.08);
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            font-family: "Manrope", "Nunito Sans", "Trebuchet MS", sans-serif;
+            color: var(--text);
+            background:
+                radial-gradient(circle at 0% 0%, #ffffff 0%, transparent 42%),
+                radial-gradient(circle at 95% 5%, #eff8ea 0%, transparent 30%),
+                linear-gradient(155deg, var(--bg-1), var(--bg-2));
+            min-height: 100vh;
+        }
+
+        .page {
+            max-width: 1380px;
+            margin: 0 auto;
+            padding: 28px 24px 34px;
+        }
+
+        .hero {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            gap: 18px;
+            margin-bottom: 18px;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: clamp(1.5rem, 2.1vw, 2.2rem);
+            letter-spacing: 0.01em;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .brand-logo {
+            width: clamp(120px, 16vw, 210px);
+            height: auto;
+            object-fit: contain;
+        }
+
+        .subtitle {
+            margin: 6px 0 0;
+            color: var(--muted);
+        }
+
+        .admin-link {
+            color: var(--primary-2);
+            text-decoration: none;
+            font-weight: 700;
+            border: 1px solid #c6dbcf;
+            padding: 10px 12px;
+            border-radius: 10px;
+            background: #f4faf6;
+            transition: all 0.2s ease;
+        }
+
+        .hero-actions {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .admin-link:hover {
+            border-color: #9dc3ae;
+            background: #edf7f0;
+        }
+
+        .grid-top {
+            display: grid;
+            grid-template-columns: minmax(280px, 360px) 1fr;
+            gap: 14px;
+            margin-bottom: 14px;
+        }
+
+        .panel {
+            background: var(--panel);
+            border: 1px solid var(--line);
+            border-radius: 16px;
+            box-shadow: var(--shadow);
+            padding: 14px;
+        }
+
+        .filtro-title {
+            margin: 0 0 8px;
+            color: var(--muted);
+            font-size: 0.84rem;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            font-weight: 800;
+        }
+
+        .filtro-form {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .filtro-form label {
+            font-weight: 700;
+        }
+
+        select,
+        button {
+            border: 1px solid var(--line);
+            border-radius: 10px;
+            padding: 10px 12px;
+            font-size: 0.95rem;
+            font-family: inherit;
+            color: var(--text);
+            background: #fff;
+        }
+
+        select {
+            min-width: 154px;
+        }
+
+        button {
+            background: linear-gradient(135deg, var(--primary), var(--primary-2));
+            border-color: var(--primary);
+            color: #fff;
+            cursor: pointer;
+            font-weight: 800;
+        }
+
+        .kpis {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(120px, 1fr));
+            gap: 10px;
+        }
+
+        .search-panel {
+            margin-bottom: 14px;
+        }
+
+        .search-form {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 8px;
+        }
+
+        .search-input {
+            border: 1px solid var(--line);
+            border-radius: 10px;
+            padding: 10px 12px;
+            font-size: 0.95rem;
+            font-family: inherit;
+        }
+
+        .search-grid {
+            margin-top: 10px;
+            display: grid;
+            grid-template-columns: repeat(3, minmax(220px, 1fr));
+            gap: 10px;
+        }
+
+        .search-card {
+            border: 1px solid var(--line);
+            border-radius: 12px;
+            padding: 10px;
+            background: #fbfdfc;
+        }
+
+        .search-title {
+            margin: 0 0 8px;
+            font-size: 0.88rem;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            font-weight: 800;
+        }
+
+        .search-list {
+            margin: 0;
+            padding-left: 18px;
+            display: grid;
+            gap: 4px;
+            font-size: 0.9rem;
+        }
+
+        .search-empty {
+            color: var(--muted);
+            font-size: 0.88rem;
+        }
+
+        .kpi {
+            background: linear-gradient(160deg, #ffffff, #f8fbfa);
+            border: 1px solid var(--line);
+            border-radius: 12px;
+            padding: 10px;
+        }
+
+        .kpi .value {
+            font-size: 1.6rem;
+            font-weight: 800;
+            line-height: 1;
+            color: #1f3f34;
+        }
+
+        .kpi .label {
+            margin-top: 5px;
+            color: var(--muted);
+            font-size: 0.88rem;
+        }
+
+        .occupancy {
+            margin-top: 10px;
+            display: grid;
+            gap: 5px;
+        }
+
+        .occupancy-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: var(--muted);
+            font-size: 0.86rem;
+            font-weight: 700;
+        }
+
+        .track {
+            height: 10px;
+            border-radius: 999px;
+            background: #e8efea;
+            overflow: hidden;
+            border: 1px solid #d9e4dd;
+        }
+
+        .fill {
+            height: 100%;
+            background: linear-gradient(90deg, #2d6a4f, #40916c);
+            width: 0;
+        }
+
+        .map-panel {
+            padding: 14px;
+        }
+
+        .legend-row {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+
+        .legend {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            font-size: 0.9rem;
+        }
+
+        .legend-item {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            color: var(--muted);
+            font-weight: 600;
+        }
+
+        .dot {
+            width: 14px;
+            height: 14px;
+            border-radius: 4px;
+            border: 1px solid rgba(0, 0, 0, 0.12);
+        }
+
+        .tools {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            color: var(--muted);
+            font-size: 0.88rem;
+        }
+
+        .tools input {
+            accent-color: var(--primary);
+        }
+
+        .warning {
+            margin-bottom: 10px;
+            border: 1px dashed #e8d7a0;
+            background: #fff8de;
+            color: #6a5a22;
+            border-radius: 10px;
+            padding: 9px 11px;
+            font-size: 0.9rem;
+        }
+
+        .mapa {
+            overflow-x: auto;
+            padding-bottom: 4px;
+        }
+
+        .linha {
+            display: grid;
+            grid-template-columns: 92px repeat(var(--cols), minmax(144px, 1fr));
+            gap: 8px;
+            min-width: 760px;
+            margin-bottom: 8px;
+            align-items: stretch;
+        }
+
+        .linha-head {
+            position: sticky;
+            top: 0;
+            z-index: 2;
+            background: linear-gradient(180deg, #ffffff, #f8fcfa);
+            border-radius: 10px;
+            padding: 6px;
+            border: 1px solid #edf2ee;
+        }
+
+        .vao-head {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 0.77rem;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            font-weight: 800;
+            color: #72847b;
+            border-radius: 8px;
+            border: 1px dashed #dbe4de;
+            background: #fbfdfc;
+        }
+
+        .corner {
+            border: none;
+            background: transparent;
+        }
+
+        .nivel {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border-radius: 10px;
+            border: 1px dashed #c9d8cf;
+            background: #f8fcfa;
+            color: #5f6f67;
+            font-weight: 800;
+        }
+
+        .posicao {
+            border-radius: 12px;
+            border: 1px solid #cfdad3;
+            padding: 10px;
+            min-height: 94px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            transition: transform 0.15s ease, box-shadow 0.15s ease;
+        }
+
+        .posicao:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 8px 18px rgba(37, 62, 52, 0.11);
+        }
+
+        .livre { background: var(--livre); }
+        .ocupada { background: var(--ocupada); }
+        .bloqueada { background: var(--bloqueada); }
+        .sem-posicao { background: var(--sem); color: #8b9790; }
+        .destino-bac {
+            border-color: #6a4c93;
+            box-shadow: inset 0 0 0 1px rgba(106, 76, 147, 0.12);
+        }
+
+        .hide-empty .sem-posicao { display: none; }
+
+        .codigo {
+            font-weight: 800;
+            font-size: 0.9rem;
+            color: #1f3f34;
+        }
+
+        .meta {
+            margin-top: 4px;
+            font-size: 0.84rem;
+            color: #456055;
+            line-height: 1.3;
+        }
+
+        .pill {
+            display: inline-block;
+            border-radius: 999px;
+            padding: 2px 8px;
+            font-size: 0.73rem;
+            font-weight: 800;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            margin-top: 6px;
+        }
+
+        .pill-bac {
+            background: #f1e8ff;
+            color: #5b3e84;
+            border: 1px solid #d2baf2;
+        }
+
+        .empty {
+            border: 1px dashed var(--line);
+            border-radius: 12px;
+            background: #fbfcfa;
+            color: var(--muted);
+            padding: 20px;
+        }
+
+        @media (max-width: 980px) {
+            .grid-top { grid-template-columns: 1fr; }
+            .kpis { grid-template-columns: repeat(2, minmax(120px, 1fr)); }
+            .search-grid { grid-template-columns: 1fr; }
+            .hero {
+                align-items: flex-start;
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <main class="page">
+        <section class="hero">
+            <div class="brand">
+                <img class="brand-logo" src="{% static 'img/tecnowatt59anos.png' %}" alt="Tecnowatt 59 anos">
+                <div>
+                    <h1>Mapa do Estoque</h1>
+                    <p class="subtitle">Leitura rápida das torres, níveis e ocupação por posição.</p>
+                </div>
+            </div>
+            <div class="hero-actions">
+                <a class="admin-link" href="/operacoes/">Operações</a>
+                <a class="admin-link" href="/admin/" target="_blank" rel="noopener">Abrir painel administrativo</a>
+            </div>
+        </section>
+
+        {% if torres %}
+            <section class="panel search-panel">
+                <p class="filtro-title">Busca rápida global</p>
+                <form method="get" class="search-form">
+                    <input type="hidden" name="torre" value="{{ torre_selecionada.id }}">
+                    <input class="search-input" type="text" name="q" value="{{ busca }}" placeholder="Buscar por palete, posição, SKU ou descrição do produto">
+                    <button type="submit">Buscar</button>
+                </form>
+
+                {% if busca %}
+                    <div class="search-grid">
+                        <article class="search-card">
+                            <p class="search-title">Paletes</p>
+                            {% if resultado_busca.paletes %}
+                                <ul class="search-list">
+                                    {% for palete in resultado_busca.paletes %}
+                                        <li>{{ palete.codigo }}{% if palete.posicao %} - {{ palete.posicao.codigo }}{% else %} - sem posição{% endif %}</li>
+                                    {% endfor %}
+                                </ul>
+                            {% else %}
+                                <div class="search-empty">Nenhum palete encontrado.</div>
+                            {% endif %}
+                        </article>
+
+                        <article class="search-card">
+                            <p class="search-title">Posições</p>
+                            {% if resultado_busca.posicoes %}
+                                <ul class="search-list">
+                                    {% for posicao in resultado_busca.posicoes %}
+                                        <li>{{ posicao.codigo }}{% if posicao.palete_atual %} - palete {{ posicao.palete_atual.codigo }}{% endif %}</li>
+                                    {% endfor %}
+                                </ul>
+                            {% else %}
+                                <div class="search-empty">Nenhuma posição encontrada.</div>
+                            {% endif %}
+                        </article>
+
+                        <article class="search-card">
+                            <p class="search-title">Produtos</p>
+                            {% if resultado_busca.produtos %}
+                                <ul class="search-list">
+                                    {% for produto in resultado_busca.produtos %}
+                                        <li>{{ produto.sku }} - {{ produto.descricao }} ({{ produto.paletes_relacionados }} palete(s))</li>
+                                    {% endfor %}
+                                </ul>
+                            {% else %}
+                                <div class="search-empty">Nenhum produto encontrado.</div>
+                            {% endif %}
+                        </article>
+                    </div>
+                {% endif %}
+            </section>
+
+            <section class="grid-top">
+                <div class="panel">
+                    <p class="filtro-title">Seleção de torre</p>
+                    <form method="get" class="filtro-form">
+                        {% if busca %}
+                            <input type="hidden" name="q" value="{{ busca }}">
+                        {% endif %}
+                        <label for="id_torre">Torre</label>
+                        <select id="id_torre" name="torre">
+                            {% for torre in torres %}
+                                <option value="{{ torre.id }}" {% if torre.id == torre_selecionada.id %}selected{% endif %}>
+                                    {{ torre.codigo }}{% if torre.nome %} - {{ torre.nome }}{% endif %}
+                                </option>
+                            {% endfor %}
+                        </select>
+                        <button type="submit">Aplicar</button>
+                    </form>
+                    <div class="occupancy">
+                        <div class="occupancy-top">
+                            <span>Ocupação</span>
+                            <span>{{ taxa_ocupacao }}%</span>
+                        </div>
+                        <div class="track"><div class="fill" style="width: {{ taxa_ocupacao }}%;"></div></div>
+                    </div>
+                </div>
+
+                <div class="panel">
+                    <div class="kpis">
+                        <div class="kpi">
+                            <div class="value">{{ torre_selecionada.capacidade_total }}</div>
+                            <div class="label">Capacidade total</div>
+                        </div>
+                        <div class="kpi">
+                            <div class="value">{{ ocupadas }}</div>
+                            <div class="label">Posições ocupadas</div>
+                        </div>
+                        <div class="kpi">
+                            <div class="value">{{ livres }}</div>
+                            <div class="label">Posições livres</div>
+                        </div>
+                        <div class="kpi">
+                            <div class="value">{{ bloqueadas }}</div>
+                            <div class="label">Posições bloqueadas</div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="panel map-panel">
+                <div class="legend-row">
+                    <div class="legend">
+                        <span class="legend-item"><span class="dot" style="background: var(--livre)"></span>Livre</span>
+                        <span class="legend-item"><span class="dot" style="background: var(--ocupada)"></span>Ocupada</span>
+                        <span class="legend-item"><span class="dot" style="background: var(--bloqueada)"></span>Bloqueada</span>
+                        <span class="legend-item"><span class="dot" style="background: #f1e8ff"></span>Destino BAC</span>
+                        <span class="legend-item"><span class="dot" style="background: var(--sem)"></span>Não configurada</span>
+                    </div>
+                    <div class="tools">
+                        <label>
+                            <input id="toggle-empty" type="checkbox"> Ocultar não configuradas
+                        </label>
+                    </div>
+                </div>
+
+                {% if nao_configuradas > 0 %}
+                    <div class="warning">
+                        Existem {{ nao_configuradas }} posições não configuradas nesta torre.
+                        Use a ação "Gerar posições" no admin para completar a estrutura.
+                    </div>
+                {% endif %}
+
+                <div id="mapa-grid" class="mapa" style="--cols: {{ torre_selecionada.qtd_vaos }};">
+                    <div class="linha linha-head">
+                        <div class="vao-head corner"></div>
+                        {% for vao in vaos %}
+                            <div class="vao-head">Vão {{ vao }}</div>
+                        {% endfor %}
+                    </div>
+
+                    {% for nivel in niveis %}
+                        <div class="linha">
+                            <div class="nivel">Nível {{ nivel.numero }}</div>
+                            {% for posicao in nivel.vaos %}
+                                {% if posicao %}
+                                    <article class="posicao {% if posicao.status == 'OCUPADA' %}ocupada{% elif posicao.status == 'BLOQUEADA' %}bloqueada{% else %}livre{% endif %} {% if posicao.setor_destino == 'BAC' %}destino-bac{% endif %}">
+                                        <div>
+                                            <div class="codigo">{{ posicao.codigo }}</div>
+                                            <div class="meta">Status: {{ posicao.get_status_display }}</div>
+                                            {% if posicao.setor_destino == 'BAC' %}
+                                                <span class="pill pill-bac">Exclusivo pós-vendas (BAC)</span>
+                                            {% endif %}
+                                        </div>
+                                        <div class="meta">
+                                            {% if posicao.palete_atual %}
+                                                Palete: {{ posicao.palete_atual.codigo }} ({{ posicao.palete_atual.get_setor_display }})
+                                            {% else %}
+                                                Sem palete
+                                            {% endif %}
+                                        </div>
+                                    </article>
+                                {% else %}
+                                    <article class="posicao sem-posicao">
+                                        <div class="codigo">Não configurada</div>
+                                        <div class="meta">Gere esta posição no admin</div>
+                                    </article>
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+                    {% endfor %}
+                </div>
+            </section>
+        {% else %}
+            <section class="empty">
+                Nenhuma torre cadastrada. Acesse o <a href="/admin/">admin</a>, crie uma torre e use a ação
+                "Gerar posições" para montar o mapa automaticamente.
+            </section>
+        {% endif %}
+    </main>
+
+    <script>
+        (function () {
+            var checkbox = document.getElementById("toggle-empty");
+            var grid = document.getElementById("mapa-grid");
+            if (!checkbox || !grid) return;
+
+            checkbox.addEventListener("change", function () {
+                if (checkbox.checked) {
+                    grid.classList.add("hide-empty");
+                } else {
+                    grid.classList.remove("hide-empty");
+                }
+            });
+        })();
+    </script>
+</body>
+</html>
