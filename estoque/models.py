@@ -1,7 +1,7 @@
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator
-from django.db import models
+from django.db import models, transaction
 from django.db.models import Sum
 
 
@@ -196,6 +196,13 @@ class Palete(models.Model):
         if not self.posicao_id:
             return
 
+        if self.posicao.status == Posicao.Status.BLOQUEADA:
+            raise ValidationError(
+                {
+                    "posicao": f"A posição {self.posicao.codigo} está bloqueada e não pode receber paletes."
+                }
+            )
+
         if self.posicao.setor_destino == Posicao.SetorDestino.BAC and self.setor != Palete.Setor.BAC:
             raise ValidationError(
                 {
@@ -208,7 +215,30 @@ class Palete(models.Model):
 
     def save(self, *args, **kwargs):
         self.full_clean()
-        return super().save(*args, **kwargs)
+
+        with transaction.atomic():
+            posicao_anterior_id = None
+            if self.pk:
+                anterior = Palete.objects.filter(pk=self.pk).values("posicao_id").first()
+                if anterior:
+                    posicao_anterior_id = anterior["posicao_id"]
+
+            resultado = super().save(*args, **kwargs)
+
+            ids_para_sincronizar = {posicao_anterior_id, self.posicao_id}
+            ids_para_sincronizar.discard(None)
+            for posicao_id in ids_para_sincronizar:
+                posicao = Posicao.objects.select_for_update().get(pk=posicao_id)
+                tem_palete = Posicao.objects.filter(pk=posicao_id, palete_atual__isnull=False).exists()
+
+                if tem_palete and posicao.status != Posicao.Status.OCUPADA:
+                    posicao.status = Posicao.Status.OCUPADA
+                    posicao.save(update_fields=["status"])
+                elif not tem_palete and posicao.status == Posicao.Status.OCUPADA:
+                    posicao.status = Posicao.Status.LIVRE
+                    posicao.save(update_fields=["status"])
+
+            return resultado
 
 
 class ItemPalete(models.Model):

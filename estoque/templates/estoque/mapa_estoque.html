@@ -380,11 +380,66 @@
             flex-direction: column;
             justify-content: space-between;
             transition: transform 0.15s ease, box-shadow 0.15s ease;
+            cursor: help;
+            position: relative;
         }
 
         .posicao:hover {
             transform: translateY(-1px);
             box-shadow: 0 8px 18px rgba(37, 62, 52, 0.11);
+        }
+
+        .hover-tooltip {
+            position: absolute;
+            left: 50%;
+            bottom: calc(100% + 8px);
+            transform: translateX(-50%) translateY(4px);
+            min-width: 200px;
+            max-width: 260px;
+            background: #10281f;
+            color: #ecf7f2;
+            border: 1px solid #2f5a4a;
+            border-radius: 10px;
+            padding: 8px 10px;
+            box-shadow: 0 14px 24px rgba(14, 30, 24, 0.24);
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+            transition: opacity 0.15s ease, transform 0.15s ease;
+            z-index: 5;
+        }
+
+        .hover-tooltip::after {
+            content: "";
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            border-width: 6px;
+            border-style: solid;
+            border-color: #10281f transparent transparent transparent;
+        }
+
+        .hover-tooltip-title {
+            font-size: 0.78rem;
+            opacity: 0.85;
+            margin-bottom: 4px;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            font-weight: 700;
+        }
+
+        .hover-tooltip-value {
+            font-size: 0.89rem;
+            line-height: 1.35;
+            font-weight: 600;
+        }
+
+        .posicao:hover .hover-tooltip,
+        .posicao:focus-within .hover-tooltip {
+            opacity: 1;
+            visibility: visible;
+            transform: translateX(-50%) translateY(0);
         }
 
         .livre { background: var(--livre); }
@@ -600,10 +655,10 @@
                             <div class="nivel">Nível {{ nivel.numero }}</div>
                             {% for posicao in nivel.vaos %}
                                 {% if posicao %}
-                                    <article class="posicao {% if posicao.status == 'OCUPADA' %}ocupada{% elif posicao.status == 'BLOQUEADA' %}bloqueada{% else %}livre{% endif %} {% if posicao.setor_destino == 'BAC' %}destino-bac{% endif %}">
+                                    <article class="posicao {% if posicao.ocupacao_visual == 'OCUPADA' %}ocupada{% elif posicao.ocupacao_visual == 'BLOQUEADA' %}bloqueada{% else %}livre{% endif %} {% if posicao.setor_destino == 'BAC' %}destino-bac{% endif %}">
                                         <div>
                                             <div class="codigo">{{ posicao.codigo }}</div>
-                                            <div class="meta">Status: {{ posicao.get_status_display }}</div>
+                                            <div class="meta">Status: {% if posicao.ocupacao_visual == 'OCUPADA' %}Ocupada{% elif posicao.ocupacao_visual == 'BLOQUEADA' %}Bloqueada{% else %}Livre{% endif %}</div>
                                             {% if posicao.setor_destino == 'BAC' %}
                                                 <span class="pill pill-bac">Exclusivo pós-vendas (BAC)</span>
                                             {% endif %}
@@ -614,6 +669,17 @@
                                             {% else %}
                                                 Sem palete
                                             {% endif %}
+                                        </div>
+                                        <div class="hover-tooltip">
+                                            <div class="hover-tooltip-title">Detalhes do Vão</div>
+                                            <div class="hover-tooltip-value">
+                                                {% if posicao.palete_atual %}
+                                                    Palete {{ posicao.palete_atual.codigo }}<br>
+                                                    Setor: {{ posicao.palete_atual.get_setor_display }}
+                                                {% else %}
+                                                    Sem palete alocado
+                                                {% endif %}
+                                            </div>
                                         </div>
                                     </article>
                                 {% else %}

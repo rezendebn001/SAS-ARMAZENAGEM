@@ -48,10 +48,13 @@ def mapa_estoque(request):
     ocupadas = livres = bloqueadas = 0
 
     for posicao in posicoes:
-        if posicao.status == Posicao.Status.OCUPADA:
-            ocupadas += 1
-        elif posicao.status == Posicao.Status.BLOQUEADA:
+        tem_palete = getattr(posicao, 'palete_atual', None) is not None
+        posicao.ocupacao_visual = Posicao.Status.OCUPADA if tem_palete else posicao.status
+
+        if posicao.status == Posicao.Status.BLOQUEADA:
             bloqueadas += 1
+        elif tem_palete:
+            ocupadas += 1
         else:
             livres += 1
         por_nivel[posicao.nivel][posicao.vao] = posicao

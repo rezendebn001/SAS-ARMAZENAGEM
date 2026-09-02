@@ -25,12 +25,37 @@ class PosicaoAdmin(admin.ModelAdmin):
     list_filter = ("torre", "setor_destino", "status", "nivel")
     search_fields = ("codigo",)
     autocomplete_fields = ("torre",)
+    actions = ["sincronizar_status_action"]
 
     def palete_alocado(self, obj):
         palete = getattr(obj, "palete_atual", None)
         return palete.codigo if palete else "-"
 
     palete_alocado.short_description = "Palete"
+
+    @admin.action(description="Sincronizar status das posições selecionadas")
+    def sincronizar_status_action(self, request, queryset):
+        atualizadas = 0
+
+        for posicao in queryset:
+            tem_palete = getattr(posicao, "palete_atual", None) is not None
+            novo_status = posicao.status
+
+            if tem_palete and posicao.status != Posicao.Status.OCUPADA:
+                novo_status = Posicao.Status.OCUPADA
+            elif not tem_palete and posicao.status == Posicao.Status.OCUPADA:
+                novo_status = Posicao.Status.LIVRE
+
+            if novo_status != posicao.status:
+                posicao.status = novo_status
+                posicao.save(update_fields=["status"])
+                atualizadas += 1
+
+        self.message_user(
+            request,
+            f"Sincronização concluída. {atualizadas} posição(ões) atualizada(s).",
+            level=messages.SUCCESS,
+        )
 
 
 @admin.register(Produto)
